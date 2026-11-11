@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using UltraGearInput.Core;
+using UltraGearInput.Core.Updates;
 using UltraGearInput.Linux.Hardware;
 
 namespace UltraGearInput.Linux.Tray;
@@ -12,7 +13,8 @@ internal sealed class LinuxTrayBackend(
     DisplayInventory inventory,
     SettingsStore store,
     DesktopNotifier notifier,
-    Action quit) : ITrayBackend, IDisposable
+    Action quit,
+    UpdateSession updates) : ITrayBackend, IDisposable
 {
     private readonly SemaphoreSlim switchGate = new(1, 1);
     private IReadOnlyList<LinuxDisplay> displays = [];
@@ -27,7 +29,7 @@ internal sealed class LinuxTrayBackend(
             [.. current.Select(display => display.Descriptor)],
             store.Load(),
             LinuxText.Labels,
-            DesktopEntry.IsInstalled(environment.AutostartFile));
+            DesktopEntry.IsInstalled(environment.AutostartFile), updates.Label, updates.IsBusy);
     }
 
     public void Activate(TrayMenuEntry entry)
@@ -45,6 +47,9 @@ internal sealed class LinuxTrayBackend(
                 break;
             case TrayCommand { Kind: TrayCommandKind.StartAtLogin }:
                 Report(LinuxText.StartupFailed, ToggleAutostart);
+                break;
+            case TrayCommand { Kind: TrayCommandKind.Update, IsEnabled: true }:
+                _ = updates.ExecuteAsync();
                 break;
             case TrayCommand { Kind: TrayCommandKind.Quit }:
                 quit();

@@ -8,7 +8,7 @@ let package = Package(
         .executable(name: "UltraGearInput", targets: ["UltraGearInput"])
     ],
     targets: [
-        .target(name: "UltraGearInputCore"),
+        .target(name: "UltraGearInputCore", resources: [.process("Resources")]),
         .executableTarget(
             name: "UltraGearInput",
             dependencies: ["UltraGearInputCore"],

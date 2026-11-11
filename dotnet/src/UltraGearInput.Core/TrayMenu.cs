@@ -1,3 +1,5 @@
+using UltraGearInput.Core.Updates;
+
 namespace UltraGearInput.Core;
 
 public abstract record TrayMenuEntry;
@@ -28,9 +30,10 @@ public enum TrayCommandKind
     OpenSettings,
     StartAtLogin,
     Quit,
+    Update,
 }
 
-public sealed record TrayCommand(TrayCommandKind Kind, string Text, bool? IsChecked = null) : TrayMenuEntry;
+public sealed record TrayCommand(TrayCommandKind Kind, string Text, bool? IsChecked = null, bool IsEnabled = true) : TrayMenuEntry;
 
 public sealed record TrayCommandLabels(string StartAtLogin, string Quit);
 
@@ -40,7 +43,9 @@ public static class TrayMenu
         IReadOnlyList<DisplayDescriptor> displays,
         SettingsLoad loaded,
         TrayCommandLabels labels,
-        bool startsAtLogin)
+        bool startsAtLogin,
+        string? updateLabel = null,
+        bool updating = false)
     {
         var entries = new List<TrayMenuEntry>();
         if (displays.Count == 0)
@@ -63,6 +68,7 @@ public static class TrayMenu
         entries.Add(new TrayCommand(TrayCommandKind.OpenSettings, AppText.OpenSettings));
         entries.Add(new TrayCommand(TrayCommandKind.StartAtLogin, labels.StartAtLogin, startsAtLogin));
         entries.Add(new TraySeparator());
+        entries.Add(new TrayCommand(TrayCommandKind.Update, updateLabel ?? UpdateText.Get("check"), IsEnabled: !updating));
         entries.Add(new TrayCommand(TrayCommandKind.Quit, labels.Quit));
         return entries;
     }

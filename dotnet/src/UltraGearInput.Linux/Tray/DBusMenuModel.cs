@@ -125,7 +125,7 @@ internal sealed class DBusMenuModel
         return id;
     }
 
-    private static bool IsActionable(TrayMenuEntry entry) => entry is TrayInput or TrayProtocolChoice or TrayCommand;
+    private static bool IsActionable(TrayMenuEntry entry) => entry is TrayInput or TrayProtocolChoice or TrayCommand { IsEnabled: true };
 
     private static Dictionary<string, DBusVariant> PropertiesOf(TrayMenuEntry entry) => entry switch
     {
@@ -135,6 +135,7 @@ internal sealed class DBusMenuModel
         TrayInput input => Label(input.Input.Name),
         TrayProtocolMenu menu => new(Label(menu.Text)) { ["children-display"] = DBusValues.Of("submenu") },
         TrayProtocolChoice choice => Toggle(choice.Text, "radio", choice.IsSelected),
+        TrayCommand { IsEnabled: false } command => Disabled(command.Text),
         TrayCommand { IsChecked: { } isChecked } command => Toggle(command.Text, "checkmark", isChecked),
         TrayCommand command => Label(command.Text),
         _ => throw new ArgumentOutOfRangeException(nameof(entry)),

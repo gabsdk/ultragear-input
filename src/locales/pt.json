@@ -1,0 +1,19 @@
+{
+  "check": "Verificar atualizações…",
+  "checking": "Verificando atualizações…",
+  "install": "Instalar {0}…",
+  "installing": "Instalando atualização…",
+  "current": "O UltraGear Input está atualizado ({0}).",
+  "available": "A versão {0} está disponível. Escolha Instalar no menu para atualizar e reiniciar.",
+  "failed": "Não foi possível atualizar o UltraGear Input",
+  "network": "Não foi possível acessar o GitHub. Confira a conexão e tente novamente.",
+  "release": "A release do GitHub está incompleta ou é inválida para este computador.",
+  "checksum": "O download falhou na verificação SHA-256. O app instalado foi preservado.",
+  "package": "O pacote baixado é inválido. O app instalado foi preservado.",
+  "permission": "A pasta do app não permite gravação. Mova o app para uma pasta sua e tente novamente.",
+  "installFailed": "Não foi possível instalar a atualização. O app anterior foi preservado.",
+  "restarting": "A atualização está pronta. Reiniciando o UltraGear Input…",
+  "updated": "O UltraGear Input foi atualizado para {0}.",
+  "unsupported": "Atualizações não estão disponíveis nesta plataforma ou nesta execução de desenvolvimento.",
+  "ok": "OK"
+}

@@ -1,0 +1,19 @@
+{
+  "check": "Check for Updates…",
+  "checking": "Checking for updates…",
+  "install": "Install {0}…",
+  "installing": "Installing update…",
+  "current": "UltraGear Input is up to date ({0}).",
+  "available": "Version {0} is available. Choose Install in the menu to update and restart.",
+  "failed": "Could not update UltraGear Input",
+  "network": "Could not reach GitHub. Check your connection and try again.",
+  "release": "The GitHub release is incomplete or invalid for this computer.",
+  "checksum": "The download failed its SHA-256 check. The installed app was kept.",
+  "package": "The downloaded package is invalid. The installed app was kept.",
+  "permission": "The app folder is not writable. Move the app to a folder you own and try again.",
+  "installFailed": "The update could not be installed. The previous app was preserved.",
+  "restarting": "The update is ready. Restarting UltraGear Input…",
+  "updated": "UltraGear Input was updated to {0}.",
+  "unsupported": "Updates are not available for this platform or this development build.",
+  "ok": "OK"
+}

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 using UltraGearInput.Core;
+using UltraGearInput.Core.Updates;
 
 namespace UltraGearInput.Windows;
 
@@ -12,6 +13,8 @@ internal sealed class TrayApplication : ApplicationContext
     private const int BalloonTimeout = 5000;
 
     private readonly SettingsStore store;
+    private readonly HttpClient updateHttp = UpdateClient.CreateHttpClient();
+    private readonly UpdateSession updates;
     private readonly TrayIconRenderer iconRenderer = new();
     private readonly ContextMenuStrip menu = new();
     private readonly Font headerFont;
@@ -22,6 +25,26 @@ internal sealed class TrayApplication : ApplicationContext
     {
         this.store = store;
         uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        var updateClient = new UpdateClient(updateHttp);
+        updates = new UpdateSession(
+            token => updateClient.CheckAsync(UpdateTarget.WindowsX64, UpdateInstaller.CurrentVersion, token),
+            (release, token) => UpdateInstaller.PrepareAsync(updateClient, release, Environment.ProcessPath!, token),
+            message => uiContext.Post(_ =>
+            {
+                if (!menu.IsDisposed)
+                {
+                    notifyIcon!.ShowBalloonTip(BalloonTimeout, AppText.AppName, message, ToolTipIcon.Info);
+                }
+            }, null),
+            () => uiContext.Post(_ => ExitThread(), null),
+            UpdateInstaller.CurrentVersion);
+        updates.Changed += () => uiContext.Post(_ =>
+        {
+            if (!menu.IsDisposed)
+            {
+                Rebuild();
+            }
+        }, null);
         headerFont = new Font(menu.Font, FontStyle.Bold);
         menu.Opening += (_, _) => Rebuild();
         notifyIcon = new NotifyIcon
@@ -40,6 +63,8 @@ internal sealed class TrayApplication : ApplicationContext
     {
         if (disposing)
         {
+            updates.Dispose();
+            updateHttp.Dispose();
             SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
             notifyIcon.Visible = false;
             notifyIcon.Dispose();
@@ -54,7 +79,7 @@ internal sealed class TrayApplication : ApplicationContext
     {
         menu.Items.Clear();
         var displays = InputSwitcher.Displays().Select(display => display.Descriptor).ToList();
-        var entries = TrayMenu.Build(displays, store.Load(), Text.Labels, StartupRegistration.IsEnabled);
+        var entries = TrayMenu.Build(displays, store.Load(), Text.Labels, StartupRegistration.IsEnabled, updates.Label, updates.IsBusy);
         foreach (var entry in entries)
         {
             menu.Items.Add(Render(entry));
@@ -71,6 +96,7 @@ internal sealed class TrayApplication : ApplicationContext
         TrayCommand command => new ToolStripMenuItem(command.Text, null, (_, _) => Run(command.Kind))
         {
             Checked = command.IsChecked == true,
+            Enabled = command.IsEnabled,
         },
         _ => throw new ArgumentOutOfRangeException(nameof(entry)),
     };
@@ -125,6 +151,9 @@ internal sealed class TrayApplication : ApplicationContext
                 break;
             case TrayCommandKind.StartAtLogin:
                 ToggleStartup();
+                break;
+            case TrayCommandKind.Update:
+                _ = updates.ExecuteAsync();
                 break;
             case TrayCommandKind.Quit:
                 ExitThread();
