@@ -1,0 +1,276 @@
+{
+  "destinationAddress": 110,
+  "protocols": {
+    "standard": {
+      "sourceAddress": 81,
+      "inputCode": 96
+    },
+    "lg": {
+      "sourceAddress": 80,
+      "inputCode": 244
+    }
+  },
+  "defaultInputs": [
+    {
+      "id": "displayPort1",
+      "name": "DisplayPort 1",
+      "standardValue": 15,
+      "lgValue": 208
+    },
+    {
+      "id": "displayPort2",
+      "name": "DisplayPort 2 / USB-C",
+      "standardValue": 16,
+      "lgValue": 209
+    },
+    {
+      "id": "usbC",
+      "name": "USB-C / DisplayPort 3",
+      "standardValue": 27,
+      "lgValue": 210
+    },
+    {
+      "id": "hdmi1",
+      "name": "HDMI 1",
+      "standardValue": 17,
+      "lgValue": 144
+    },
+    {
+      "id": "hdmi2",
+      "name": "HDMI 2",
+      "standardValue": 18,
+      "lgValue": 145
+    }
+  ],
+  "frames": [
+    {
+      "protocol": "standard",
+      "inputId": "displayPort1",
+      "bytes": [
+        81,
+        132,
+        3,
+        96,
+        0,
+        15,
+        215
+      ]
+    },
+    {
+      "protocol": "standard",
+      "inputId": "displayPort2",
+      "bytes": [
+        81,
+        132,
+        3,
+        96,
+        0,
+        16,
+        200
+      ]
+    },
+    {
+      "protocol": "standard",
+      "inputId": "usbC",
+      "bytes": [
+        81,
+        132,
+        3,
+        96,
+        0,
+        27,
+        195
+      ]
+    },
+    {
+      "protocol": "standard",
+      "inputId": "hdmi1",
+      "bytes": [
+        81,
+        132,
+        3,
+        96,
+        0,
+        17,
+        201
+      ]
+    },
+    {
+      "protocol": "standard",
+      "inputId": "hdmi2",
+      "bytes": [
+        81,
+        132,
+        3,
+        96,
+        0,
+        18,
+        202
+      ]
+    },
+    {
+      "protocol": "lg",
+      "inputId": "displayPort1",
+      "bytes": [
+        80,
+        132,
+        3,
+        244,
+        0,
+        208,
+        157
+      ]
+    },
+    {
+      "protocol": "lg",
+      "inputId": "displayPort2",
+      "bytes": [
+        80,
+        132,
+        3,
+        244,
+        0,
+        209,
+        156
+      ]
+    },
+    {
+      "protocol": "lg",
+      "inputId": "usbC",
+      "bytes": [
+        80,
+        132,
+        3,
+        244,
+        0,
+        210,
+        159
+      ]
+    },
+    {
+      "protocol": "lg",
+      "inputId": "hdmi1",
+      "bytes": [
+        80,
+        132,
+        3,
+        244,
+        0,
+        144,
+        221
+      ]
+    },
+    {
+      "protocol": "lg",
+      "inputId": "hdmi2",
+      "bytes": [
+        80,
+        132,
+        3,
+        244,
+        0,
+        145,
+        220
+      ]
+    }
+  ],
+  "manufacturers": [
+    {
+      "raw": 7789,
+      "code": "GSM"
+    },
+    {
+      "raw": 1552,
+      "code": "APP"
+    },
+    {
+      "raw": 4268,
+      "code": "DEL"
+    },
+    {
+      "raw": 19501,
+      "code": "SAM"
+    },
+    {
+      "raw": 0,
+      "code": null
+    },
+    {
+      "raw": 40557,
+      "code": null
+    }
+  ],
+  "devicePaths": [
+    {
+      "path": "\\\\?\\DISPLAY#GSM5BBF#5&2a1e7c3d&0&UID4352#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "code": "GSM"
+    },
+    {
+      "path": "\\\\?\\DISPLAY#DELA1C4#5&2a1e7c3d&0&UID4353#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "code": "DEL"
+    },
+    {
+      "path": "\\\\?\\display#gsm7766#4&1b2c3d4e&0&UID256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "code": "GSM"
+    },
+    {
+      "path": "\\\\?\\DISPLAY#Default_Monitor#1&8713bca&0&UID0#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
+      "code": null
+    },
+    {
+      "path": "",
+      "code": null
+    }
+  ],
+  "maximumInputs": 32,
+  "settingsCases": [
+    {
+      "json": "{}",
+      "error": null
+    },
+    {
+      "json": "{\"protocols\":{\"display-a\":\"lg\",\"display-b\":\"standard\"}}",
+      "error": null
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\"DisplayPort\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"hdmi\",\"name\":\"HDMI\",\"standardValue\":17,\"lgValue\":144}]}",
+      "error": null
+    },
+    {
+      "json": "{not json",
+      "error": "malformed"
+    },
+    {
+      "json": "{\"protocols\":{\"display-a\":\"vga\"}}",
+      "error": "malformed"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\"DisplayPort\",\"standardValue\":-1,\"lgValue\":208}]}",
+      "error": "malformed"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\"DisplayPort\",\"standardValue\":65536,\"lgValue\":208}]}",
+      "error": "malformed"
+    },
+    {
+      "json": "{\"inputs\":[]}",
+      "error": "emptyInputs"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"i0\",\"name\":\"Input 0\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i1\",\"name\":\"Input 1\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i2\",\"name\":\"Input 2\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i3\",\"name\":\"Input 3\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i4\",\"name\":\"Input 4\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i5\",\"name\":\"Input 5\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i6\",\"name\":\"Input 6\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i7\",\"name\":\"Input 7\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i8\",\"name\":\"Input 8\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i9\",\"name\":\"Input 9\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i10\",\"name\":\"Input 10\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i11\",\"name\":\"Input 11\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i12\",\"name\":\"Input 12\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i13\",\"name\":\"Input 13\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i14\",\"name\":\"Input 14\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i15\",\"name\":\"Input 15\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i16\",\"name\":\"Input 16\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i17\",\"name\":\"Input 17\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i18\",\"name\":\"Input 18\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i19\",\"name\":\"Input 19\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i20\",\"name\":\"Input 20\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i21\",\"name\":\"Input 21\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i22\",\"name\":\"Input 22\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i23\",\"name\":\"Input 23\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i24\",\"name\":\"Input 24\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i25\",\"name\":\"Input 25\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i26\",\"name\":\"Input 26\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i27\",\"name\":\"Input 27\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i28\",\"name\":\"Input 28\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i29\",\"name\":\"Input 29\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i30\",\"name\":\"Input 30\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i31\",\"name\":\"Input 31\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"i32\",\"name\":\"Input 32\",\"standardValue\":15,\"lgValue\":208}]}",
+      "error": "tooManyInputs"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"  \",\"name\":\"DisplayPort\",\"standardValue\":15,\"lgValue\":208}]}",
+      "error": "blankInputId"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\"DisplayPort\",\"standardValue\":15,\"lgValue\":208},{\"id\":\"dp\",\"name\":\"Other\",\"standardValue\":15,\"lgValue\":208}]}",
+      "error": "duplicateInputId"
+    },
+    {
+      "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\" \",\"standardValue\":15,\"lgValue\":208}]}",
+      "error": "blankInputName"
+    }
+  ]
+}

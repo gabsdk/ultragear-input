@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+jobs:
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Lint
+        run: swift format lint --strict --recursive --configuration .swift-format Sources Tests Package.swift
+
+      - name: Build
+        run: swift build -Xswiftc -warnings-as-errors
+
+      - name: Test
+        run: swift test
+
+      - name: Bundle
+        run: ./scripts/bundle.sh
+
+      - name: Smoke test
+        run: '"dist/UltraGear Input.app/Contents/MacOS/UltraGearInput" --list-displays | python3 -c "import json, sys; assert isinstance(json.load(sys.stdin), list)"'
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ultragear-input-macos
+          path: |
+            macos/dist/*.zip
+            macos/dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: windows/global.json
+
+      - name: Lint
+        run: dotnet format UltraGearInput.slnx --verify-no-changes
+
+      - name: Build
+        run: dotnet build UltraGearInput.slnx --configuration Release
+
+      - name: Test
+        run: dotnet test --solution UltraGearInput.slnx --configuration Release --no-build
+
+      - name: Publish
+        run: |
+          $version = (Get-Content ../VERSION -Raw).Trim()
+          dotnet publish src/UltraGearInput/UltraGearInput.csproj --configuration Release --output publish
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $executable = "UltraGearInput-windows-x64-$version.exe"
+          Copy-Item publish/UltraGearInput.exe "dist/$executable"
+          $hash = (Get-FileHash "dist/$executable" -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "dist/$executable.sha256" -Value "$hash  $executable" -NoNewline
+
+      - name: Smoke test
+        run: |
+          $output = & ./publish/UltraGearInput.exe --list-displays | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "UltraGearInput exited with $LASTEXITCODE" }
+          $displays = ConvertFrom-Json -InputObject $output -NoEnumerate
+          if ($displays -isnot [array]) { throw "Expected a JSON array, got: $output" }
+          Write-Output $output
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ultragear-input-windows
+          path: windows/dist/*
+          if-no-files-found: error
+          retention-days: 14
