@@ -38,3 +38,19 @@ Structure layouts and interface identifiers follow the public headers of the
 [NVAPI SDK](https://github.com/NVIDIA/nvapi) and the
 [AMD Display Library SDK](https://github.com/GPUOpen-LibrariesAndSDKs/display-library),
 both released under the MIT License. No SDK files are redistributed.
+
+## Linux specifications
+
+The Linux app implements the public
+[D-Bus specification](https://dbus.freedesktop.org/doc/dbus-specification.html), the
+[StatusNotifierItem specification](https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/),
+the `com.canonical.dbusmenu` interface as published by
+[libdbusmenu](https://github.com/AyatanaIndicators/libdbusmenu), the
+[Desktop Notifications specification](https://specifications.freedesktop.org/notification-spec/latest/)
+and the kernel [i2c-dev interface](https://docs.kernel.org/i2c/dev-interface.html). No source files
+were copied. The udev rule follows the approach described by
+[ddcutil](https://www.ddcutil.com/i2c_permissions/).
+
+The automated Linux test runs the
+[AppIndicator GNOME Shell extension](https://github.com/ubuntu/gnome-shell-extension-appindicator)
+(GPL-2.0) and Xfce inside a test container. They are not part of the released archives.
