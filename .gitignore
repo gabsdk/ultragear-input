@@ -4,9 +4,13 @@ macos/.build/
 macos/.swiftpm/
 macos/dist/
 
-windows/**/bin/
-windows/**/obj/
-windows/publish/
-windows/dist/
-windows/.vs/
+dotnet/**/bin/
+dotnet/**/obj/
+dotnet/publish/
+dotnet/dist/
+dotnet/.vs/
 *.user
+
+linux/dist/
+linux/tests/screenshots/
+__pycache__/

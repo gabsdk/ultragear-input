@@ -54,14 +54,14 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: windows
+        working-directory: dotnet
         shell: pwsh
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-dotnet@v6
         with:
-          global-json-file: windows/global.json
+          global-json-file: dotnet/global.json
 
       - name: Lint
         run: dotnet format UltraGearInput.slnx --verify-no-changes
@@ -75,7 +75,7 @@ jobs:
       - name: Publish
         run: |
           $version = (Get-Content ../VERSION -Raw).Trim()
-          dotnet publish src/UltraGearInput/UltraGearInput.csproj --configuration Release --output publish
+          dotnet publish src/UltraGearInput.Windows/UltraGearInput.Windows.csproj --configuration Release --output publish
           New-Item -ItemType Directory -Force dist | Out-Null
           $executable = "UltraGearInput-windows-x64-$version.exe"
           Copy-Item publish/UltraGearInput.exe "dist/$executable"
@@ -93,6 +93,108 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: ultragear-input-windows
-          path: windows/dist/*
+          path: dotnet/dist/*
           if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    name: Linux build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: dotnet/global.json
+
+      - name: Lint
+        working-directory: dotnet
+        run: |
+          dotnet format UltraGearInput.slnx --verify-no-changes
+          bash -n ../linux/packaging/install.sh ../linux/packaging/uninstall.sh ../linux/scripts/package.sh ../linux/tests/*.sh
+          python3 -m py_compile ../linux/tests/integration.py
+          bash ../linux/tests/kernel.test.sh
+
+      - name: Build
+        working-directory: dotnet
+        run: dotnet build UltraGearInput.slnx --configuration Release
+
+      - name: Test
+        working-directory: dotnet
+        run: dotnet test --solution UltraGearInput.slnx --configuration Release --no-build
+
+      - name: Package
+        run: linux/scripts/package.sh x64 arm64
+
+      - name: Smoke test
+        run: |
+          tar -xzf linux/dist/ultragear-input-*-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          binary="$(find "$RUNNER_TEMP" -path '*linux-x64/ultragear-input' -type f)"
+          test "$("$binary" --version)" = "$(tr -d '[:space:]' < VERSION)"
+          "$binary" --list-displays | python3 -c "import json, sys; assert isinstance(json.load(sys.stdin), list)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ultragear-input-linux
+          path: |
+            linux/dist/*.tar.gz
+            linux/dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  linux-integration:
+    name: Linux ${{ matrix.architecture }} on GNOME
+    needs: linux
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ultragear-input-linux
+          path: dist
+
+      - name: Verify checksum
+        working-directory: dist
+        run: sha256sum -c ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz.sha256
+
+      - name: Installer with udev and i2c-dev
+        run: linux/tests/installer.sh dist/ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz --system
+
+      - name: Create an I2C bus with a chip at the DDC/CI address
+        id: stub
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y i2c-tools
+          source linux/tests/kernel.sh
+          ensure_i2c_stub
+          for adapter in /sys/class/i2c-dev/i2c-*; do
+            if grep -q "SMBus stub" "$adapter/name"; then
+              bus="${adapter##*/i2c-}"
+            fi
+          done
+          test -n "${bus:-}"
+          sudo chmod 666 "/dev/i2c-$bus"
+          echo "bus=$bus" >> "$GITHUB_OUTPUT"
+
+      - name: GNOME Shell top bar test
+        run: |
+          tar -xzf dist/ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz -C "$RUNNER_TEMP"
+          binary="$(find "$RUNNER_TEMP" -path '*linux-${{ matrix.architecture }}/ultragear-input' -type f)"
+          linux/tests/run-in-container.sh "$binary" "$RUNNER_TEMP/screenshots" "${{ steps.stub.outputs.bus }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: screenshots-linux-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: warn
           retention-days: 14

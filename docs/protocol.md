@@ -36,13 +36,20 @@ Port names vary by model. If an entry switches to the wrong port, rename it in t
 |---|---|---|
 | macOS (Apple silicon) | `IOAVServiceWriteI2C` | `IOAVServiceWriteI2C` |
 | Windows | `SetVCPFeature` from `dxva2.dll` | NVIDIA `NvAPI_I2CWrite`, then AMD `ADL_Display_DDCBlockAccess_Get` |
+| Linux | `write()` to `/dev/i2c-N` at address `0x37` | Same as standard |
 
 The Windows DDC/CI API always sends source address `0x51`, so the LG protocol needs the raw I2C
 access offered by the NVIDIA and AMD drivers. Intel graphics on Windows only support the standard
 protocol in this app.
 
+On Linux the kernel I2C driver sends whatever bytes the app writes, so both protocols use the same
+path and work with every graphics driver that exposes DDC/CI buses (amdgpu, i915/xe, nouveau,
+NVIDIA). When an adapter offers only SMBus transfers, the app uses the SMBus I2C block write with
+the source address as the command byte, which produces the same bytes on the wire.
+
 ## Shared test vectors
 
 [`spec/protocol.json`](../spec/protocol.json) holds the default inputs, the expected bytes of
-every frame, manufacturer ID decoding and settings validation cases. The Swift and C# test suites
+every frame, manufacturer ID decoding, settings validation cases and the EDID fixtures in
+[`spec/fixtures`](../spec/fixtures). The Swift and C# test suites
 both read this file, so the two apps cannot drift apart.

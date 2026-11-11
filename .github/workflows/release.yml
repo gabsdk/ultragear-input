@@ -34,6 +34,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          pattern: ultragear-input-*
           path: assets
           merge-multiple: true
 
