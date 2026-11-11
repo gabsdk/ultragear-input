@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.Versioning;
 using UltraGearInput.Core;
+using UltraGearInput.Core.Updates;
 using UltraGearInput.Linux;
 using UltraGearInput.Linux.DBus;
 using UltraGearInput.Linux.Hardware;
@@ -17,7 +18,18 @@ internal static class LinuxProgram
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args is [UpdateInstaller.ApplyFlag, var plan])
+        {
+            return await UpdateInstaller.ApplyAsync(plan, CancellationToken.None).ConfigureAwait(false);
+        }
+        if (args is [UpdateInstaller.UpdatedFlag or UpdateInstaller.FailedFlag, _, var stage, var helper]
+            && int.TryParse(helper, System.Globalization.CultureInfo.InvariantCulture, out var helperId))
+        {
+            _ = UpdateInstaller.CleanupAsync(stage, helperId);
+            args = args[..2];
+        }
         var environment = LinuxEnvironment.Current();
+        string? notice = null;
         var store = new SettingsStore(environment.SettingsFile);
         var inventory = new DisplayInventory(
             new SysfsScanner(environment.SysfsRoot),
@@ -36,6 +48,12 @@ internal static class LinuxProgram
             case ["--version"]:
                 Console.WriteLine(typeof(LinuxProgram).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]);
                 return 0;
+            case [UpdateInstaller.UpdatedFlag, var version]:
+                notice = UpdateText.Get("updated", value: ReleaseVersion.Parse(version).ToString());
+                break;
+            case [UpdateInstaller.FailedFlag, _]:
+                notice = UpdateText.Get("installFailed");
+                break;
             case []:
                 break;
             default:
@@ -48,6 +66,6 @@ internal static class LinuxProgram
             await Console.Error.WriteLineAsync(LinuxText.NoSessionBus).ConfigureAwait(false);
             return 1;
         }
-        return await new TrayHost(environment, inventory, store).RunAsync(endpoint).ConfigureAwait(false);
+        return await new TrayHost(environment, inventory, store).RunAsync(endpoint, notice).ConfigureAwait(false);
     }
 }

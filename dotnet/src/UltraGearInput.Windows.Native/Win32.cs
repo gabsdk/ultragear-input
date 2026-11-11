@@ -115,6 +115,9 @@ internal unsafe struct DisplayConfigTargetDeviceName
 [SupportedOSPlatform("windows")]
 internal static unsafe partial class Win32
 {
+    [LibraryImport("kernel32.dll")]
+    internal static partial ushort GetUserDefaultUILanguage();
+
     public const int Success = 0;
     public const int InsufficientBuffer = 122;
     public const uint QueryOnlyActivePaths = 0x2;

@@ -18,6 +18,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
     private let store: SettingsStore
+    private var updateTask: Task<Void, Never>?
+    private var updateOffer: UpdateRelease?
+    private var updateBusy = false
 
     init(store: SettingsStore = .standard) {
         self.store = store
@@ -51,6 +54,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(loginItem)
         menu.addItem(.separator())
+        let updateLabel = UpdateText.get(
+            updateBusy ? (updateOffer == nil ? "checking" : "installing") : (updateOffer == nil ? "check" : "install"),
+            value: updateOffer?.version.description)
+        let updateItem = actionItem(updateLabel, action: #selector(updateApp))
+        updateItem.isEnabled = !updateBusy
+        menu.addItem(updateItem)
         menu.addItem(actionItem(Copy.quit, action: #selector(quit), keyEquivalent: "q"))
     }
 
@@ -123,7 +132,49 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
     }
 
+    @objc private func updateApp() {
+        guard !updateBusy else { return }
+        updateBusy = true
+        updateTask = Task {
+            defer {
+                updateBusy = false
+                updateTask = nil
+            }
+            do {
+                if let offer = updateOffer {
+                    try await UpdateInstaller.prepare(offer, target: Bundle.main.bundleURL)
+                    try Task.checkCancellation()
+                    NSApp.terminate(nil)
+                } else {
+                    guard let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
+                        throw UpdateFailure.unsupported
+                    }
+                    let latest = try await UpdateClient().check(currentVersion: version)
+                    try Task.checkCancellation()
+                    if let latest {
+                        updateOffer = latest
+                        presentAlert(Copy.appName, UpdateText.get("available", value: latest.version.description))
+                    } else {
+                        presentAlert(Copy.appName, UpdateText.get("current", value: version))
+                    }
+                }
+            } catch is CancellationError {
+            } catch {
+                if !Task.isCancelled {
+                    presentAlert(
+                        UpdateText.get("failed"),
+                        UpdateText.get((error as? UpdateFailure)?.rawValue ?? (error is URLError ? "network" : "installFailed")))
+                }
+            }
+        }
+    }
+
+    func cancelUpdate() {
+        updateTask?.cancel()
+    }
+
     @objc private func quit() {
+        cancelUpdate()
         NSApp.terminate(nil)
     }
 
@@ -144,7 +195,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         alert.alertStyle = .warning
         alert.messageText = title
         alert.informativeText = message
-        alert.addButton(withTitle: Copy.ok)
+        alert.addButton(withTitle: UpdateText.get("ok"))
         NSApp.activate()
         alert.runModal()
     }

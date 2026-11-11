@@ -295,7 +295,7 @@ def run(arguments):
         results.check("renders the full menu inside GNOME Shell", labels(menu) == [
             "LG ULTRAGEAR", *expected_inputs, "Protocol", "",
             "DELL U2723QE", *expected_inputs, "Protocol", "",
-            "Open Settings File…", "Start at Login", "", "Quit UltraGear Input"], labels(menu))
+            "Open Settings File…", "Start at Login", "", "Check for Updates…", "Quit UltraGear Input"], labels(menu))
         results.check("renders display names as non-clickable headers",
                       bool(menu) and not menu[0]["sensitive"] and menu[1]["sensitive"], menu[:2])
         protocol = next((item for item in menu if item["label"] == "Protocol"), None)

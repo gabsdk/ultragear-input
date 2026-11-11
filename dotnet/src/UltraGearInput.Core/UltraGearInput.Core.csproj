@@ -5,4 +5,8 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="../../../src/locales/*.json" LogicalName="updates.%(Filename).json" />
+  </ItemGroup>
+
 </Project>

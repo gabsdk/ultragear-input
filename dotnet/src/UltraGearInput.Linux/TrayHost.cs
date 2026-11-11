@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using UltraGearInput.Core;
+using UltraGearInput.Core.Updates;
 using UltraGearInput.Linux.DBus;
 using UltraGearInput.Linux.Hardware;
 using UltraGearInput.Linux.Tray;
@@ -16,7 +17,7 @@ internal sealed class TrayHost(LinuxEnvironment environment, DisplayInventory in
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan TrayHostGrace = TimeSpan.FromSeconds(15);
 
-    public async Task<int> RunAsync(DBusEndpoint endpoint)
+    public async Task<int> RunAsync(DBusEndpoint endpoint, string? startupNotice = null)
     {
         using var stop = new CancellationTokenSource();
         using var terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context => Cancel(context, stop));
@@ -24,11 +25,24 @@ internal sealed class TrayHost(LinuxEnvironment environment, DisplayInventory in
 
         await using var connection = await DBusConnection.ConnectAsync(endpoint, LibC.GetEffectiveUserId(), stop.Token).ConfigureAwait(false);
         var notifier = new DesktopNotifier(connection, Console.Error);
-        using var backend = new LinuxTrayBackend(environment, inventory, store, notifier, stop.Cancel);
+        using var updateHttp = UpdateClient.CreateHttpClient();
+        var updateClient = new UpdateClient(updateHttp);
+        using var updates = new UpdateSession(
+            token => updateClient.CheckAsync(UpdateInstaller.CurrentTarget, UpdateInstaller.CurrentVersion, token),
+            (release, token) => UpdateInstaller.PrepareAsync(updateClient, release, environment.Executable, token),
+            message => _ = notifier.ShowAsync(AppText.AppName, message),
+            stop.Cancel,
+            UpdateInstaller.CurrentVersion);
+        using var backend = new LinuxTrayBackend(environment, inventory, store, notifier, stop.Cancel, updates);
         var service = new TrayService(connection, backend);
+        updates.Changed += () => _ = service.RefreshAsync();
         var reader = connection.RunAsync(service, stop.Token);
 
         await connection.HelloAsync(stop.Token).ConfigureAwait(false);
+        if (startupNotice is not null)
+        {
+            await notifier.ShowAsync(AppText.AppName, startupNotice).ConfigureAwait(false);
+        }
         if (!await connection.RequestNameAsync(InstanceName, stop.Token).ConfigureAwait(false))
         {
             await Console.Error.WriteLineAsync(LinuxText.AlreadyRunning).ConfigureAwait(false);

@@ -37,6 +37,9 @@ jobs:
       - name: Bundle
         run: ./scripts/bundle.sh
 
+      - name: Update handoff
+        run: python3 ../scripts/test-update.py --binary "dist/UltraGear Input.app/Contents/MacOS/UltraGearInput" --app "dist/UltraGear Input.app"
+
       - name: Smoke test
         run: '"dist/UltraGear Input.app/Contents/MacOS/UltraGearInput" --list-displays | python3 -c "import json, sys; assert isinstance(json.load(sys.stdin), list)"'
 
@@ -81,6 +84,9 @@ jobs:
           Copy-Item publish/UltraGearInput.exe "dist/$executable"
           $hash = (Get-FileHash "dist/$executable" -Algorithm SHA256).Hash.ToLowerInvariant()
           Set-Content -Path "dist/$executable.sha256" -Value "$hash  $executable" -NoNewline
+
+      - name: Update handoff
+        run: python ../scripts/test-update.py --binary publish/UltraGearInput.exe
 
       - name: Smoke test
         run: |
@@ -131,6 +137,7 @@ jobs:
           tar -xzf linux/dist/ultragear-input-*-linux-x64.tar.gz -C "$RUNNER_TEMP"
           binary="$(find "$RUNNER_TEMP" -path '*linux-x64/ultragear-input' -type f)"
           test "$("$binary" --version)" = "$(tr -d '[:space:]' < VERSION)"
+          python3 scripts/test-update.py --binary "$binary"
           "$binary" --list-displays | python3 -c "import json, sys; assert isinstance(json.load(sys.stdin), list)"
 
       - uses: actions/upload-artifact@v7
@@ -165,6 +172,12 @@ jobs:
       - name: Verify checksum
         working-directory: dist
         run: sha256sum -c ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz.sha256
+
+      - name: Update handoff
+        run: |
+          tar -xzf dist/ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz -C "$RUNNER_TEMP"
+          binary="$(find "$RUNNER_TEMP" -path '*linux-${{ matrix.architecture }}/ultragear-input' -type f)"
+          python3 scripts/test-update.py --binary "$binary"
 
       - name: Installer with udev and i2c-dev
         run: linux/tests/installer.sh dist/ultragear-input-*-linux-${{ matrix.architecture }}.tar.gz --system

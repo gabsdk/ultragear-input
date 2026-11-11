@@ -15,7 +15,7 @@ public sealed class DBusMenuModelTests
         var root = model.Layout(DBusMenuModel.RootId, -1, []);
         var children = Children(root);
         Assert.Equal(
-            ["LG ULTRAGEAR", "DisplayPort 1", "DisplayPort 2 / USB-C", "USB-C / DisplayPort 3", "HDMI 1", "HDMI 2", "Protocol", null, AppText.OpenSettings, "Start at Login", null, "Quit"],
+            ["LG ULTRAGEAR", "DisplayPort 1", "DisplayPort 2 / USB-C", "USB-C / DisplayPort 3", "HDMI 1", "HDMI 2", "Protocol", null, AppText.OpenSettings, "Start at Login", null, UltraGearInput.Core.Updates.UpdateText.Get("check"), "Quit"],
             children.Select(child => Label(child)));
 
         Assert.False((bool)Properties(children[0])["enabled"].Value);
@@ -39,7 +39,7 @@ public sealed class DBusMenuModelTests
         Assert.Equal((Displays.Lg.Key, (ushort)0x90, DdcProtocol.Lg), (hdmi.Display.Key, hdmi.Value, hdmi.Protocol));
         var standard = Assert.IsType<TrayProtocolChoice>(model.ActionFor((int)Children(children[6])[0][0]));
         Assert.Equal(DdcProtocol.Standard, standard.Protocol);
-        Assert.Equal(TrayCommandKind.Quit, Assert.IsType<TrayCommand>(model.ActionFor((int)children[11][0])).Kind);
+        Assert.Equal(TrayCommandKind.Quit, Assert.IsType<TrayCommand>(model.ActionFor((int)children[12][0])).Kind);
         Assert.Null(model.ActionFor((int)children[0][0]));
         Assert.Null(model.ActionFor(999));
     }

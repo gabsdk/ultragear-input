@@ -49,7 +49,7 @@ public sealed class EdidAndMenuTests
         Assert.Equal("DELL U2723QE", dellHeader.Text);
         Assert.IsType<TraySeparator>(entries[entries.ToList().IndexOf(dellHeader) - 1]);
         Assert.All(entries.OfType<TrayInput>().Where(input => input.Display == Displays.Dell), input => Assert.Equal(DdcProtocol.Standard, input.Protocol));
-        Assert.Equal([TrayCommandKind.OpenSettings, TrayCommandKind.StartAtLogin, TrayCommandKind.Quit], entries.OfType<TrayCommand>().Select(command => command.Kind));
+        Assert.Equal([TrayCommandKind.OpenSettings, TrayCommandKind.StartAtLogin, TrayCommandKind.Update, TrayCommandKind.Quit], entries.OfType<TrayCommand>().Select(command => command.Kind));
     }
 
     [Fact]
