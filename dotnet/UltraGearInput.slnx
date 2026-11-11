@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UltraGearInput.Core/UltraGearInput.Core.csproj" />
+    <Project Path="src/UltraGearInput.Linux/UltraGearInput.Linux.csproj" />
+    <Project Path="src/UltraGearInput.Windows.Native/UltraGearInput.Windows.Native.csproj" />
+    <Project Path="src/UltraGearInput.Windows/UltraGearInput.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UltraGearInput.Tests/UltraGearInput.Tests.csproj" />
+  </Folder>
+</Solution>

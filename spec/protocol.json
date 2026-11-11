@@ -272,5 +272,23 @@
       "json": "{\"inputs\":[{\"id\":\"dp\",\"name\":\" \",\"standardValue\":15,\"lgValue\":208}]}",
       "error": "blankInputName"
     }
+  ],
+  "edids": [
+    {
+      "file": "lg-ultragear.edid",
+      "manufacturerCode": "GSM",
+      "productCode": 23487,
+      "serialNumber": 16843009,
+      "productName": "LG ULTRAGEAR",
+      "identity": "1e6dbf5b010101010c22"
+    },
+    {
+      "file": "dell-u2723qe.edid",
+      "manufacturerCode": "DEL",
+      "productCode": 41412,
+      "serialNumber": 305419896,
+      "productName": "DELL U2723QE",
+      "identity": "10acc4a1785634120c22"
+    }
   ]
 }
