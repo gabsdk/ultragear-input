@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+tests_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${tests_dir}/kernel.sh"
+
 archive="${1:?Usage: installer.sh <ultragear-input-*.tar.gz> [--system]}"
 system_mode="${2:-}"
 failures=0
@@ -46,7 +49,7 @@ fi
 if [[ "${system_mode}" == "--system" ]]; then
     check "installs the udev rule" cmp -s "${package}/60-ultragear-input.rules" /etc/udev/rules.d/60-ultragear-input.rules
     check "loads i2c-dev at boot" cmp -s "${package}/ultragear-input.conf" /etc/modules-load.d/ultragear-input.conf
-    check "loads i2c-dev now" test -d /sys/module/i2c_dev
+    check "provides the i2c-dev interface" i2c_dev_available
     if udevadm verify --help > /dev/null 2>&1; then
         check "udev accepts the rule" udevadm verify /etc/udev/rules.d/60-ultragear-input.rules
     fi

@@ -23,8 +23,9 @@ public sealed class DBusConnectionTests
     [Fact]
     public void FallsBackToTheRuntimeDirectory()
     {
-        var endpoint = DBusAddress.Session(name => name == DBusAddress.RuntimeDirectoryVariable ? "/run/user/1000" : null);
-        Assert.Equal(new DBusEndpoint("/run/user/1000/bus", false), endpoint);
+        using var directory = new TemporaryDirectory();
+        var endpoint = DBusAddress.Session(name => name == DBusAddress.RuntimeDirectoryVariable ? directory.Path : null);
+        Assert.Equal(new DBusEndpoint(directory.Combine("bus"), false), endpoint);
         Assert.Null(DBusAddress.Session(_ => null));
     }
 

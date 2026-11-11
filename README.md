@@ -182,6 +182,9 @@ tar -xzf linux/dist/ultragear-input-*-linux-x64.tar.gz -C /tmp
 | Windows and Linux | `dotnet format UltraGearInput.slnx --verify-no-changes` | `dotnet build UltraGearInput.slnx` | `dotnet test --solution UltraGearInput.slnx` |
 | Linux top bar | | `linux/scripts/package.sh` | `linux/tests/run-in-container.sh <binary>` (Docker) and `linux/tests/installer.sh <archive>` |
 
+Run `bash linux/tests/kernel.test.sh` from the repository root to check the CI kernel setup
+logic without loading modules or installing system packages.
+
 Both unit test suites check their output against the same vectors in
 [`spec/protocol.json`](spec/protocol.json). The Linux test runs the real binary inside GNOME Shell
 with the AppIndicator extension and inside an Xfce panel, and clicks the menu through them. See

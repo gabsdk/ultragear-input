@@ -13,7 +13,7 @@ public sealed class LinuxPlatformTests
         using var directory = new TemporaryDirectory();
         directory.CreateDirectory("devices", "gpu", "i2c-3");
         directory.CreateDirectory("class");
-        directory.Link("../devices/gpu/i2c-3", "class", "i2c-3");
+        directory.Link(Path.Combine("..", "devices", "gpu", "i2c-3"), "class", "i2c-3");
         directory.Link("..", "devices", "gpu", "i2c-3", "device");
 
         var resolved = PathResolver.RealPath(directory.Combine("class", "i2c-3", "device"));
@@ -65,7 +65,11 @@ public sealed class LinuxPlatformTests
     }
 
     [Fact]
-    public void BuildsDevicePaths() => Assert.Equal("/dev/i2c-7", I2cTransfer.DevicePath("/dev", 7));
+    public void BuildsDevicePaths()
+    {
+        using var directory = new TemporaryDirectory();
+        Assert.Equal(directory.Combine("i2c-7"), I2cTransfer.DevicePath(directory.Path, 7));
+    }
 
     [Fact]
     public unsafe void SmbusIoctlStructureMatchesTheKernelLayout()
@@ -82,9 +86,9 @@ public sealed class LinuxPlatformTests
     {
         var defaults = LinuxEnvironment.From(_ => null, "/home/ana", "/opt/ugi/ultragear-input");
         Assert.Equal(("/sys", "/dev"), (defaults.SysfsRoot, defaults.DeviceRoot));
-        Assert.Equal("/home/ana/.config/ultragear-input/settings.json", defaults.SettingsFile);
-        Assert.Equal("/home/ana/.config/autostart/ultragear-input.desktop", defaults.AutostartFile);
-        Assert.Equal("/home/ana/.local/share/applications/ultragear-input.desktop", defaults.LauncherFile);
+        Assert.Equal(Path.Combine("/home/ana", ".config", "ultragear-input", "settings.json"), defaults.SettingsFile);
+        Assert.Equal(Path.Combine("/home/ana", ".config", "autostart", "ultragear-input.desktop"), defaults.AutostartFile);
+        Assert.Equal(Path.Combine("/home/ana", ".local", "share", "applications", "ultragear-input.desktop"), defaults.LauncherFile);
 
         var custom = LinuxEnvironment.From(
             name => name switch
@@ -97,7 +101,7 @@ public sealed class LinuxPlatformTests
             },
             "/home/ana",
             "/x");
-        Assert.Equal(("/fake/sys", "/fake/dev", "/cfg/ultragear-input/settings.json", "/data/applications/ultragear-input.desktop"),
+        Assert.Equal(("/fake/sys", "/fake/dev", Path.Combine("/cfg", "ultragear-input", "settings.json"), Path.Combine("/data", "applications", "ultragear-input.desktop")),
             (custom.SysfsRoot, custom.DeviceRoot, custom.SettingsFile, custom.LauncherFile));
     }
 

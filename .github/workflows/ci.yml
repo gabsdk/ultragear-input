@@ -113,6 +113,7 @@ jobs:
           dotnet format UltraGearInput.slnx --verify-no-changes
           bash -n ../linux/packaging/install.sh ../linux/packaging/uninstall.sh ../linux/scripts/package.sh ../linux/tests/*.sh
           python3 -m py_compile ../linux/tests/integration.py
+          bash ../linux/tests/kernel.test.sh
 
       - name: Build
         working-directory: dotnet
@@ -172,9 +173,9 @@ jobs:
         id: stub
         run: |
           sudo apt-get update
-          sudo apt-get install -y "linux-modules-extra-$(uname -r)" i2c-tools
-          sudo modprobe i2c-dev
-          sudo modprobe i2c-stub chip_addr=0x37
+          sudo apt-get install -y i2c-tools
+          source linux/tests/kernel.sh
+          ensure_i2c_stub
           for adapter in /sys/class/i2c-dev/i2c-*; do
             if grep -q "SMBus stub" "$adapter/name"; then
               bus="${adapter##*/i2c-}"

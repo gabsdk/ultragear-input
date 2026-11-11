@@ -25,7 +25,7 @@ internal sealed class TemporaryDirectory : IDisposable
     public void Link(string target, params string[] parts)
     {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Combine(parts))!);
-        File.CreateSymbolicLink(Combine(parts), target);
+        Directory.CreateSymbolicLink(Combine(parts), target);
     }
 
     public void Dispose() => Directory.Delete(Path, recursive: true);

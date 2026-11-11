@@ -14,7 +14,7 @@ public sealed class SysfsDisplayTests : IDisposable
     [Fact]
     public void FindsConnectorsWithDdcLinksAndAuxChildren()
     {
-        var gpu = AddGpu("0000:03:00.0");
+        var gpu = AddGpu("display-controller-3");
         AddConnector(gpu, "card1-HDMI-A-1", lg, ddcBus: 4);
         AddConnector(gpu, "card1-DP-2", dell, auxBus: 7);
 
@@ -28,7 +28,7 @@ public sealed class SysfsDisplayTests : IDisposable
     [Fact]
     public void SkipsInternalAndDisconnectedConnectors()
     {
-        var gpu = AddGpu("0000:00:02.0");
+        var gpu = AddGpu("display-controller-0");
         AddConnector(gpu, "card0-eDP-1", lg, ddcBus: 1);
         AddConnector(gpu, "card0-DP-1", dell, ddcBus: 2, status: "disconnected");
         AddConnector(gpu, "card0-Writeback-1", [], status: "unknown");
@@ -42,9 +42,9 @@ public sealed class SysfsDisplayTests : IDisposable
     [Fact]
     public void FindsOnlyAdaptersThatBelongToADisplayController()
     {
-        var gpu = AddGpu("0000:01:00.0");
+        var gpu = AddGpu("display-controller-1");
         AddAdapter(gpu, 3);
-        AddAdapter(sysfs.CreateDirectory("devices", "pci0000:00", "0000:00:1f.4"), 0, pciClass: "0x0c0500");
+        AddAdapter(sysfs.CreateDirectory("devices", "pci-root", "smbus-controller"), 0, pciClass: "0x0c0500");
         AddAdapter(sysfs.CreateDirectory("devices", "platform", "soc"), 9);
 
         Assert.Equal([3], Scanner().DisplayAdapterBuses());
@@ -114,7 +114,7 @@ public sealed class SysfsDisplayTests : IDisposable
     [Fact]
     public void InventoryCachesProbesUntilTheConnectorsChange()
     {
-        var gpu = AddGpu("0000:01:00.0");
+        var gpu = AddGpu("display-controller-1");
         AddAdapter(gpu, 3);
         AddConnector(gpu, "card0-DP-1", lg);
         var probes = 0;
@@ -153,7 +153,7 @@ public sealed class SysfsDisplayTests : IDisposable
 
     private string AddGpu(string address)
     {
-        var device = sysfs.CreateDirectory("devices", "pci0000:00", address);
+        var device = sysfs.CreateDirectory("devices", "pci-root", address);
         File.WriteAllText(System.IO.Path.Combine(device, "class"), "0x030000\n");
         return device;
     }
@@ -167,7 +167,7 @@ public sealed class SysfsDisplayTests : IDisposable
         if (ddcBus is { } bus)
         {
             var adapter = Directory.CreateDirectory(System.IO.Path.Combine(gpu, $"i2c-{bus}")).FullName;
-            File.CreateSymbolicLink(System.IO.Path.Combine(connector, "ddc"), System.IO.Path.GetRelativePath(connector, adapter));
+            Directory.CreateSymbolicLink(System.IO.Path.Combine(connector, "ddc"), System.IO.Path.GetRelativePath(connector, adapter));
         }
         if (auxBus is { } aux)
         {
@@ -184,7 +184,7 @@ public sealed class SysfsDisplayTests : IDisposable
         }
         var adapter = Directory.CreateDirectory(System.IO.Path.Combine(parent, $"i2c-{bus}")).FullName;
         var node = Directory.CreateDirectory(System.IO.Path.Combine(adapter, "i2c-dev", $"i2c-{bus}")).FullName;
-        File.CreateSymbolicLink(System.IO.Path.Combine(node, "device"), "../..");
+        Directory.CreateSymbolicLink(System.IO.Path.Combine(node, "device"), System.IO.Path.Combine("..", ".."));
         sysfs.Link(System.IO.Path.GetRelativePath(sysfs.Combine("class", "i2c-dev"), node), "class", "i2c-dev", $"i2c-{bus}");
     }
 }

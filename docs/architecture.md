@@ -71,6 +71,16 @@ Decisions:
 | `dotnet test --solution UltraGearInput.slnx` in `dotnet/` | .NET core, Windows interop layouts against the SDK headers, the D-Bus wire format against hand-built spec vectors, a socket conversation with a fake bus, dbusmenu and StatusNotifierItem behavior, sysfs discovery on temporary trees with real symlinks |
 | `linux/tests/run-in-container.sh <binary>` | Real GNOME Shell 46 with the AppIndicator extension and a real Xfce panel, in a container, as a non-root user with an isolated home |
 | `linux/tests/installer.sh <archive> [--system]` | Installs and removes the archive in a temporary home; `--system` also installs the udev rule, loads `i2c-dev` and checks the rule with `udevadm verify` |
+| `bash linux/tests/kernel.test.sh` | Checks built-in I2C interface detection, conditional module installation and stub load failures without changing the host kernel |
+
+Filesystem fixtures use host-native paths, portable controller names and directory symlinks, so
+the full .NET suite can also run on Windows without skipping Linux discovery tests. The real
+Linux desktop test still exercises Linux sysfs paths and PCI controller names.
+
+The installer test checks `/sys/class/i2c-dev`, which exists when the interface is available
+whether the driver is built in or loaded as a module. CI uses `modinfo` to check for `i2c-stub`
+before requesting a matching `linux-modules-extra` package. Module loading and package failures
+remain fatal; the integration test is never silently skipped.
 
 The GNOME test starts the app before GNOME Shell, then checks that it registers when the shell
 appears, that the icon is visible, that the shell renders the whole menu with headers, a submenu,
