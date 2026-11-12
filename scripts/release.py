@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -48,7 +49,9 @@ def publish(directory):
     existing = subprocess.run(["git", "rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}"], capture_output=True, text=True)
     if existing.returncode == 0 and existing.stdout.strip() != sha:
         raise ValueError("VERSION already belongs to another commit; increment VERSION")
-    release = subprocess.run(["gh", "release", "view", tag, "--repo", repository], capture_output=True)
+    release = subprocess.run(["gh", "release", "view", tag, "--repo", repository, "--json", "targetCommitish"], capture_output=True, text=True)
+    if release.returncode == 0 and existing.returncode != 0 and json.loads(release.stdout)["targetCommitish"] != sha:
+        raise ValueError("Release draft belongs to another commit; increment VERSION")
     if release.returncode != 0:
         subprocess.run(["gh", "release", "create", tag, "--repo", repository, "--target", sha,
                         "--title", "UltraGear Input " + version, "--generate-notes", "--draft"], check=True)

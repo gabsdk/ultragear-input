@@ -149,13 +149,13 @@ public static class UpdateInstaller
             var helper = Path.GetFullPath(Environment.ProcessPath!);
             if (Path.GetDirectoryName(helper) != stage || Path.GetFileName(planFile) != "plan.json")
             {
-                throw new UpdateException("package");
+                throw new InvalidDataException($"Helper directory {Path.GetDirectoryName(helper)} does not match plan directory {stage}, or plan filename is invalid.");
             }
             plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(planFile, cancellationToken).ConfigureAwait(false), UpdatePlanJsonContext.Default.UpdatePlan)
                 ?? throw new UpdateException("package");
             if (plan.Payload != Path.Combine(stage, "payload") || !Path.IsPathFullyQualified(plan.Target) || plan.ParentId <= 0)
             {
-                throw new UpdateException("package");
+                throw new InvalidDataException($"Payload {plan.Payload} does not match {Path.Combine(stage, "payload")}, target is not absolute, or parent ID is invalid.");
             }
             _ = ReleaseVersion.Parse(plan.Version);
             validated = true;

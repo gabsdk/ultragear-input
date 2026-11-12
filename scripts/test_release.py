@@ -83,6 +83,16 @@ class ReleaseTests(unittest.TestCase):
                 release.publish(self.directory)
             self.assertEqual(2, run.call_count)
 
+    def test_never_reuses_a_draft_from_another_commit(self):
+        environment = {"GITHUB_REF": "refs/heads/main", "GITHUB_SHA": "a" * 40, "GITHUB_REPOSITORY": "owner/repo"}
+        with patch.dict(os.environ, environment), patch("release.Path.read_text", return_value="1.2.3"), \
+                patch("release.release_assets", return_value=[]), patch("release.subprocess.run") as run:
+            run.side_effect = [subprocess.CompletedProcess([], 0), subprocess.CompletedProcess([], 1, ""),
+                               subprocess.CompletedProcess([], 0, '{"targetCommitish":"' + "b" * 40 + '"}')]
+            with self.assertRaises(ValueError):
+                release.publish(self.directory)
+            self.assertEqual(3, run.call_count)
+
 
 if __name__ == "__main__":
     unittest.main()
