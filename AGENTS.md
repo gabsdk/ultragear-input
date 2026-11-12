@@ -222,6 +222,10 @@ Report that distinction explicitly.
   artifacts separate from distributable packages.
 - `VERSION` is the release version source. A `vX.Y.Z` release tag must match it and refer to a
   commit on `main`; all required build/integration jobs must pass before publication.
+- Every push or manual CI execution on `main` publishes a stable release after macOS, Windows
+  and both Linux integration jobs pass. Development and pull requests only produce artifacts.
+  Increment `VERSION` for a new release commit; never move an existing version tag. Publication
+  verifies all four packages and checksums before exposing the release.
 - Preserve release filenames, checksums, installer contents, executable permissions and the
   release guard. Publish only distributable archives/executables and their checksums, with no
   screenshots, logs, test fixtures, private files or credentials.

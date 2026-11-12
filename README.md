@@ -197,8 +197,11 @@ with the AppIndicator extension and inside an Xfce panel, and clicks the menu th
 - CI runs lint, build, tests and a smoke test on macOS, Windows and Linux for pushes and pull
   requests to `main` and `development`, plus the GNOME and Xfce test on x64 and arm64 with a kernel
   I2C bus. Builds are kept as artifacts for 14 days.
-- A release is a `vX.Y.Z` tag on `main` that matches `VERSION`. The release workflow builds every
-  app and attaches them with their checksums.
+- Every push or manual CI execution on `main` publishes a stable `vX.Y.Z` release matching
+  `VERSION` after macOS, Windows and both Linux desktop checks pass. Increment `VERSION` before
+  releasing another commit; an existing version tag is never moved. All four packages and their
+  checksums are verified before the release becomes public. Development and pull requests only
+  produce artifacts.
 
 ## Acknowledgements
 

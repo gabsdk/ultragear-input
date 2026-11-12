@@ -142,22 +142,21 @@ public static class UpdateInstaller
     {
         UpdatePlan? plan = null;
         var validated = false;
+        var phase = "plan validation";
         try
         {
             var stage = Path.GetDirectoryName(Path.GetFullPath(planFile))!;
             var helper = Path.GetFullPath(Environment.ProcessPath!);
-            if (Path.GetDirectoryName(helper) != stage || Path.GetFileName(planFile) != "plan.json")
+            if (!SamePath(Path.GetDirectoryName(helper)!, stage) || Path.GetFileName(planFile) != "plan.json")
             {
                 throw new UpdateException("package");
             }
             plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(planFile, cancellationToken).ConfigureAwait(false), UpdatePlanJsonContext.Default.UpdatePlan)
                 ?? throw new UpdateException("package");
-            if (plan.Payload != Path.Combine(stage, "payload") || !Path.IsPathFullyQualified(plan.Target) || plan.ParentId <= 0)
-            {
-                throw new UpdateException("package");
-            }
+            plan = ValidatePlanPaths(plan, stage);
             _ = ReleaseVersion.Parse(plan.Version);
             validated = true;
+            phase = "parent exit";
             Process? parent = null;
             try { parent = Process.GetProcessById(plan.ParentId); }
             catch (ArgumentException) { }
@@ -172,6 +171,7 @@ public static class UpdateInstaller
                     await parent.WaitForExitAsync(cancellationToken).WaitAsync(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
                 }
             }
+            phase = "replacement";
             await ReplaceAsync(plan, cancellationToken, async () =>
             {
                 await VerifyVersionAsync(plan.Target, plan.Version, cancellationToken).ConfigureAwait(false);
@@ -180,6 +180,7 @@ public static class UpdateInstaller
                     Start(plan.Target, UpdatedFlag, plan.Version, stage);
                 }
             }).ConfigureAwait(false);
+            phase = "cleanup";
             if (!plan.Restart)
             {
                 File.Delete(plan.Payload);
@@ -193,6 +194,7 @@ public static class UpdateInstaller
             {
                 Start(plan.Target, FailedFlag, "installFailed", Path.GetDirectoryName(planFile));
             }
+            await Console.Error.WriteLineAsync($"Update helper failed during {phase}: {exception.GetType().Name}: {exception.Message}").ConfigureAwait(false);
             await Console.Error.WriteLineAsync(UpdateText.Get("installFailed")).ConfigureAwait(false);
             return 1;
         }
@@ -235,6 +237,19 @@ public static class UpdateInstaller
         }
     }
 
+    public static UpdatePlan ValidatePlanPaths(UpdatePlan plan, string stage)
+    {
+        if (!Path.IsPathFullyQualified(plan.Target) || !Path.IsPathFullyQualified(plan.Payload)
+            || plan.ParentId <= 0 || !SamePath(plan.Payload, Path.Combine(stage, "payload")))
+        {
+            throw new UpdateException("package");
+        }
+        return plan with { Target = Path.GetFullPath(plan.Target), Payload = Path.GetFullPath(plan.Payload) };
+    }
+
+    private static bool SamePath(string left, string right) =>
+        string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
     public static async Task<string> HashAsync(string file, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(file);
@@ -253,6 +268,7 @@ public static class UpdateInstaller
             await child.WaitForExitAsync(cancellationToken).WaitAsync(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
             if (child.ExitCode != 0 || (await output.ConfigureAwait(false)).Trim() != version)
             {
+                await Console.Error.WriteLineAsync($"Update version probe failed: exit={child.ExitCode}, stdout={(await output.ConfigureAwait(false)).Trim()}, stderr={(await error.ConfigureAwait(false)).Trim()}").ConfigureAwait(false);
                 throw new UpdateException("package");
             }
             await error.ConfigureAwait(false);
@@ -273,7 +289,7 @@ public static class UpdateInstaller
         try
         {
             var fullPath = Path.GetFullPath(stage);
-            if (Path.GetDirectoryName(fullPath) != Path.TrimEndingDirectorySeparator(Path.GetTempPath())
+            if (!SamePath(Path.GetDirectoryName(fullPath)!, Path.TrimEndingDirectorySeparator(Path.GetTempPath()))
                 || !Path.GetFileName(fullPath).StartsWith("ultragear-update-", StringComparison.Ordinal)
                 || new DirectoryInfo(fullPath).LinkTarget is not null)
             {
@@ -281,7 +297,8 @@ public static class UpdateInstaller
             }
             var planFile = Path.Combine(fullPath, "plan.json");
             var plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(planFile).ConfigureAwait(false), UpdatePlanJsonContext.Default.UpdatePlan);
-            if (plan is null || plan.Target != Environment.ProcessPath || plan.Payload != Path.Combine(fullPath, "payload"))
+            if (plan is null || !Path.IsPathFullyQualified(plan.Target) || !Path.IsPathFullyQualified(plan.Payload)
+                || !SamePath(plan.Target, Environment.ProcessPath!) || !SamePath(plan.Payload, Path.Combine(fullPath, "payload")))
             {
                 return;
             }

@@ -6,6 +6,32 @@ namespace UltraGearInput.Tests.Updates;
 
 public sealed class UpdateInstallerTests
 {
+    [Theory]
+    [InlineData("payload")]
+    [InlineData("./payload")]
+    public void NormalizesTheOwnedPayloadBeforeValidation(string payload)
+    {
+        using var directory = new TemporaryDirectory();
+        var plan = new UpdatePlan(directory.Combine("installed app"), directory.Combine(payload), "", 1, 0, "2.3.4");
+        var normalized = UpdateInstaller.ValidatePlanPaths(plan, directory.Path);
+        Assert.Equal(directory.Combine("payload"), normalized.Payload);
+        Assert.Equal(plan.Target, normalized.Target);
+    }
+
+    [Theory]
+    [InlineData("other/payload", "installed", 1)]
+    [InlineData("relative:payload", "installed", 1)]
+    [InlineData("../payload", "installed", 1)]
+    [InlineData("payload", "relative:installed", 1)]
+    [InlineData("payload", "installed", 0)]
+    public void RejectsPathsOutsideTheStageOrInvalidOwnership(string payload, string target, int parent)
+    {
+        using var directory = new TemporaryDirectory();
+        var plan = new UpdatePlan(target.StartsWith("relative:", StringComparison.Ordinal) ? target[9..] : directory.Combine(target),
+            payload.StartsWith("relative:", StringComparison.Ordinal) ? payload[9..] : directory.Combine(payload), "", parent, 0, "2.3.4");
+        Assert.Throws<UpdateException>(() => UpdateInstaller.ValidatePlanPaths(plan, directory.Path));
+    }
+
     [Fact]
     public async Task ReplacesOnlyTheExecutableAndPreservesItsPermissions()
     {

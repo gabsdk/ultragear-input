@@ -53,17 +53,21 @@ internal sealed class TrayHost(LinuxEnvironment environment, DisplayInventory in
         await service.RefreshAsync().ConfigureAwait(false);
 
         var registered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var registration = new TrayRegistration(
+            token => connection.CallAsync(DBusMessage.MethodCall(TrayService.WatcherName, TrayService.WatcherPath,
+                TrayService.WatcherName, "RegisterStatusNotifierItem", "s", itemName), token),
+            Console.Error, TimeSpan.FromSeconds(5));
         service.WatcherChanged += present =>
         {
             if (present)
             {
-                _ = RegisterAsync(connection, itemName, registered, stop.Token);
+                _ = RegisterAsync(registration, itemName, registered, stop.Token);
             }
         };
         await connection.AddMatchAsync(DBusBus.NameOwnerChangedRule(TrayService.WatcherName), stop.Token).ConfigureAwait(false);
         if (await connection.NameHasOwnerAsync(TrayService.WatcherName, stop.Token).ConfigureAwait(false))
         {
-            await RegisterAsync(connection, itemName, registered, stop.Token).ConfigureAwait(false);
+            await RegisterAsync(registration, itemName, registered, stop.Token).ConfigureAwait(false);
         }
         _ = WarnWithoutTrayHostAsync(notifier, registered.Task, stop.Token);
 
@@ -78,19 +82,12 @@ internal sealed class TrayHost(LinuxEnvironment environment, DisplayInventory in
         return exitCode;
     }
 
-    private static async Task RegisterAsync(DBusConnection connection, string itemName, TaskCompletionSource registered, CancellationToken cancellationToken)
+    private static async Task RegisterAsync(TrayRegistration registration, string itemName, TaskCompletionSource registered, CancellationToken cancellationToken)
     {
-        try
+        if (await registration.RegisterAsync(cancellationToken).ConfigureAwait(false))
         {
-            await connection.CallAsync(
-                DBusMessage.MethodCall(TrayService.WatcherName, TrayService.WatcherPath, TrayService.WatcherName, "RegisterStatusNotifierItem", "s", itemName),
-                cancellationToken).ConfigureAwait(false);
             registered.TrySetResult();
             await Console.Error.WriteLineAsync($"Registered {itemName} with {TrayService.WatcherName}.").ConfigureAwait(false);
-        }
-        catch (DBusException exception)
-        {
-            await Console.Error.WriteLineAsync($"Tray registration failed: {exception.Name}: {exception.Message}").ConfigureAwait(false);
         }
     }
 

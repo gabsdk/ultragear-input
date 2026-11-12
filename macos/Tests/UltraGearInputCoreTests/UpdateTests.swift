@@ -120,6 +120,11 @@ struct UpdateTests {
                 #expect(text.contains("{0}") == catalogs[0][key]!.contains("{0}"))
             }
         }
+        for (index, language) in ["en", "pt", "es"].enumerated() {
+            for (key, text) in catalogs[index] {
+                #expect(UpdateText.get(key, language: language) == text)
+            }
+        }
     }
 
     private func fixture() throws -> Data {

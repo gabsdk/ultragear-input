@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import ctypes
 import hashlib
 import json
 import os
@@ -16,6 +17,14 @@ def digest(path):
 def run(binary, app):
     with tempfile.TemporaryDirectory(prefix="ultragear-update-test-") as temporary:
         root = Path(temporary)
+        if os.name == "nt":
+            buffer = ctypes.create_unicode_buffer(32768)
+            short_path = ctypes.windll.kernel32.GetShortPathNameW
+            short_path.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_ulong]
+            short_path.restype = ctypes.c_ulong
+            length = short_path(str(root), buffer, len(buffer))
+            assert 0 < length < len(buffer), "Could not prepare the Windows short-path regression"
+            root = Path(buffer.value)
         settings = root / "home" / "settings.json"
         settings.parent.mkdir()
         settings.write_text('{"keep":true}')
@@ -65,6 +74,9 @@ def run(binary, app):
             completed = subprocess.run([str(helper), "--apply-update", str(plan_file)], env=environment, capture_output=True, text=True, timeout=45)
             if corrupt:
                 assert completed.returncode != 0, completed.stdout + completed.stderr
+                if not app:
+                    expected_error = "checksum" if scenario == "checksum" else "Update version probe failed:"
+                    assert expected_error in completed.stderr, completed.stdout + completed.stderr
                 assert digest(target_binary) == previous
                 if marker:
                     assert marker.exists()
