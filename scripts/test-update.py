@@ -65,6 +65,9 @@ def run(binary, app):
             completed = subprocess.run([str(helper), "--apply-update", str(plan_file)], env=environment, capture_output=True, text=True, timeout=45)
             if corrupt:
                 assert completed.returncode != 0, completed.stdout + completed.stderr
+                if not app:
+                    expected_error = "checksum" if scenario == "checksum" else "Update version probe failed:"
+                    assert expected_error in completed.stderr, completed.stdout + completed.stderr
                 assert digest(target_binary) == previous
                 if marker:
                     assert marker.exists()

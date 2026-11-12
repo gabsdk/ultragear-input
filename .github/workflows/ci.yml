@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_call' }}
 
 jobs:
   macos:
@@ -24,6 +24,9 @@ jobs:
         working-directory: macos
     steps:
       - uses: actions/checkout@v7
+
+      - name: Release automation tests
+        run: python3 ../scripts/test_release.py
 
       - name: Lint
         run: swift format lint --strict --recursive --configuration .swift-format Sources Tests Package.swift
@@ -211,3 +214,11 @@ jobs:
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: warn
           retention-days: 14
+
+  release:
+    name: Release main
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [macos, windows, linux-integration]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml

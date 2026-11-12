@@ -142,6 +142,7 @@ public static class UpdateInstaller
     {
         UpdatePlan? plan = null;
         var validated = false;
+        var phase = "plan validation";
         try
         {
             var stage = Path.GetDirectoryName(Path.GetFullPath(planFile))!;
@@ -158,6 +159,7 @@ public static class UpdateInstaller
             }
             _ = ReleaseVersion.Parse(plan.Version);
             validated = true;
+            phase = "parent exit";
             Process? parent = null;
             try { parent = Process.GetProcessById(plan.ParentId); }
             catch (ArgumentException) { }
@@ -172,6 +174,7 @@ public static class UpdateInstaller
                     await parent.WaitForExitAsync(cancellationToken).WaitAsync(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
                 }
             }
+            phase = "replacement";
             await ReplaceAsync(plan, cancellationToken, async () =>
             {
                 await VerifyVersionAsync(plan.Target, plan.Version, cancellationToken).ConfigureAwait(false);
@@ -180,6 +183,7 @@ public static class UpdateInstaller
                     Start(plan.Target, UpdatedFlag, plan.Version, stage);
                 }
             }).ConfigureAwait(false);
+            phase = "cleanup";
             if (!plan.Restart)
             {
                 File.Delete(plan.Payload);
@@ -193,6 +197,7 @@ public static class UpdateInstaller
             {
                 Start(plan.Target, FailedFlag, "installFailed", Path.GetDirectoryName(planFile));
             }
+            await Console.Error.WriteLineAsync($"Update helper failed during {phase}: {exception.GetType().Name}: {exception.Message}").ConfigureAwait(false);
             await Console.Error.WriteLineAsync(UpdateText.Get("installFailed")).ConfigureAwait(false);
             return 1;
         }
@@ -253,6 +258,7 @@ public static class UpdateInstaller
             await child.WaitForExitAsync(cancellationToken).WaitAsync(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
             if (child.ExitCode != 0 || (await output.ConfigureAwait(false)).Trim() != version)
             {
+                await Console.Error.WriteLineAsync($"Update version probe failed: exit={child.ExitCode}, stdout={(await output.ConfigureAwait(false)).Trim()}, stderr={(await error.ConfigureAwait(false)).Trim()}").ConfigureAwait(false);
                 throw new UpdateException("package");
             }
             await error.ConfigureAwait(false);
