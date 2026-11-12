@@ -147,16 +147,13 @@ public static class UpdateInstaller
         {
             var stage = Path.GetDirectoryName(Path.GetFullPath(planFile))!;
             var helper = Path.GetFullPath(Environment.ProcessPath!);
-            if (Path.GetDirectoryName(helper) != stage || Path.GetFileName(planFile) != "plan.json")
+            if (!SamePath(Path.GetDirectoryName(helper)!, stage) || Path.GetFileName(planFile) != "plan.json")
             {
-                throw new InvalidDataException($"Helper directory {Path.GetDirectoryName(helper)} does not match plan directory {stage}, or plan filename is invalid.");
+                throw new UpdateException("package");
             }
             plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(planFile, cancellationToken).ConfigureAwait(false), UpdatePlanJsonContext.Default.UpdatePlan)
                 ?? throw new UpdateException("package");
-            if (plan.Payload != Path.Combine(stage, "payload") || !Path.IsPathFullyQualified(plan.Target) || plan.ParentId <= 0)
-            {
-                throw new InvalidDataException($"Payload {plan.Payload} does not match {Path.Combine(stage, "payload")}, target is not absolute, or parent ID is invalid.");
-            }
+            plan = ValidatePlanPaths(plan, stage);
             _ = ReleaseVersion.Parse(plan.Version);
             validated = true;
             phase = "parent exit";
@@ -240,6 +237,19 @@ public static class UpdateInstaller
         }
     }
 
+    public static UpdatePlan ValidatePlanPaths(UpdatePlan plan, string stage)
+    {
+        if (!Path.IsPathFullyQualified(plan.Target) || !Path.IsPathFullyQualified(plan.Payload)
+            || plan.ParentId <= 0 || !SamePath(plan.Payload, Path.Combine(stage, "payload")))
+        {
+            throw new UpdateException("package");
+        }
+        return plan with { Target = Path.GetFullPath(plan.Target), Payload = Path.GetFullPath(plan.Payload) };
+    }
+
+    private static bool SamePath(string left, string right) =>
+        string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
     public static async Task<string> HashAsync(string file, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(file);
@@ -279,7 +289,7 @@ public static class UpdateInstaller
         try
         {
             var fullPath = Path.GetFullPath(stage);
-            if (Path.GetDirectoryName(fullPath) != Path.TrimEndingDirectorySeparator(Path.GetTempPath())
+            if (!SamePath(Path.GetDirectoryName(fullPath)!, Path.TrimEndingDirectorySeparator(Path.GetTempPath()))
                 || !Path.GetFileName(fullPath).StartsWith("ultragear-update-", StringComparison.Ordinal)
                 || new DirectoryInfo(fullPath).LinkTarget is not null)
             {
@@ -287,7 +297,8 @@ public static class UpdateInstaller
             }
             var planFile = Path.Combine(fullPath, "plan.json");
             var plan = JsonSerializer.Deserialize(await File.ReadAllTextAsync(planFile).ConfigureAwait(false), UpdatePlanJsonContext.Default.UpdatePlan);
-            if (plan is null || plan.Target != Environment.ProcessPath || plan.Payload != Path.Combine(fullPath, "payload"))
+            if (plan is null || !Path.IsPathFullyQualified(plan.Target) || !Path.IsPathFullyQualified(plan.Payload)
+                || !SamePath(plan.Target, Environment.ProcessPath!) || !SamePath(plan.Payload, Path.Combine(fullPath, "payload")))
             {
                 return;
             }
